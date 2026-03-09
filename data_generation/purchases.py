@@ -5,7 +5,12 @@ from faker import Faker
 import os
 
 fake = Faker('ru_RU')
-os.makedirs('data/purchases', exist_ok=True)
+
+products_path = r'C:\retail_analytics_pikcha\data\products'
+customers_path = r'C:\retail_analytics_pikcha\data\customers'
+purchases_path = r'C:\retail_analytics_pikcha\data\purchases'
+os.makedirs(purchases_path, exist_ok=True)
+
 
 def load_json_files(folder_path):
     """Загружает все JSON файлы из папки"""
@@ -15,6 +20,7 @@ def load_json_files(folder_path):
         with open(file_path, 'r', encoding='utf-8') as f:
             data.append(json.load(f))
     return data
+
 
 def create_cart_item(product, quantity):
     """Создает товар для корзины"""
@@ -30,6 +36,7 @@ def create_cart_item(product, quantity):
         "manufacturer": product['manufacturer']
     }
 
+
 def get_store_description(store_network):
     """Возвращает описание магазина по его сети"""
     if store_network == "Большая Пикча":
@@ -37,32 +44,33 @@ def get_store_description(store_network):
     else:
         return "Магазин у дома площадью менее 100 кв.м. Входит в федеральную сеть из 15 магазинов."
 
+
 def generate_purchase(purchase_id, products, customers):
     """Генерирует одну покупку"""
     customer = random.choice(customers)
-    
+
     # Выбираем случайные товары
     num_items = random.randint(1, 5)
     selected_products = random.sample(products, num_items)
-    
+
     # Создаем корзину
     items = []
     total_amount = 0
-    
+
     for product in selected_products:
         quantity = random.randint(1, 3)
         item = create_cart_item(product, quantity)
         items.append(item)
         total_amount += item['total_price']
-    
+
     # Определяем параметры покупки
     is_delivery = random.choice([True, False, False])  # 33% доставка
     payment_method = random.choice(["card", "cash", "online"])
     purchase_date = fake.date_time_between(start_date='-90d', end_date='now')
-    
+
     # Формируем данные магазина
     store_network = customer['purchase_location']['store_network']
-    
+
     purchase = {
         "purchase_id": f"ord-{purchase_date.strftime('%Y%m%d')}-{purchase_id:03d}",
         "customer": {
@@ -93,33 +101,35 @@ def generate_purchase(purchase_id, products, customers):
         "delivery_address": customer['delivery_address'] if is_delivery else None,
         "purchase_datetime": purchase_date.strftime('%Y-%m-%dT%H:%M:%S')
     }
-    
+
     return purchase
+
 
 def generate_all_purchases(num_purchases=200):
     """Генерирует все покупки"""
     print("Загрузка данных...")
-    
+
     # Загружаем существующие данные
-    products = load_json_files('data/products')
-    customers = load_json_files('data/customers')
-    
+    products = load_json_files(products_path)
+    customers = load_json_files(customers_path)
+
     print(f"Загружено {len(products)} товаров и {len(customers)} покупателей")
-    
+
     # Генерируем покупки
     for i in range(1, num_purchases + 1):
         purchase = generate_purchase(i, products, customers)
-        
+
         # Сохраняем в файл
-        filename = f"data/purchases/{purchase['purchase_id']}.json"
+        filename = os.path.join(purchases_path, f"{purchase['purchase_id']}.json")
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(purchase, f, ensure_ascii=False, indent=2)
-        
+
         # Прогресс каждые 20 покупок
         if i % 20 == 0:
             print(f"Создано: {i} покупок...")
-    
+
     print(f"\n✅ Сгенерировано {num_purchases} покупок в папке data/purchases/")
+
 
 if __name__ == "__main__":
     generate_all_purchases(200)
