@@ -5,7 +5,9 @@ from datetime import date, datetime
 import os
 fake = Faker('ru_RU')
 
-os.makedirs('data/products', exist_ok=True)
+products_path = r'C:\retail_analytics_pikcha\data\products'
+os.makedirs(products_path, exist_ok=True)
+
 
 Categories = {
     'Молочные продукты':[
@@ -204,20 +206,42 @@ def generate_product(product_id, category, base_product):
 # функция генерации товаров по категориям
 def generate_all_products():
     product_id = 1
-    
+    target_per_category = 20
+    total_products = 0
+
+    print("=" * 60)
+    print("ГЕНЕРАЦИЯ ТОВАРОВ (минимум 100 штук)")
+    print("=" * 60)
+
     for category, products in Categories.items():
-        for product_data in products:
-            for i in range(random.randint(2, 3)):
+        category_count = 0
+        print(f"\n📦 Категория: {category}")
+        print("-" * 40)
+
+        while category_count < target_per_category:
+            for product_data in products:
+                if category_count >= target_per_category:
+                    break
+
+                # Создаем товар
                 product = generate_product(product_id, category, product_data)
 
-                filename = f"data/products/{product['id']}.json"
+                filename = os.path.join(products_path, f"{product['id']}.json")
+
                 with open(filename, 'w', encoding='utf-8') as f:
                     json.dump(product, f, ensure_ascii=False, indent=2)
-            
-                print(f"\n Создан {filename} - {product['name']}")
-                product_id += 1
 
-    print(f"\n✅ Сгенерировано {product_id-1} товаров в папке data/products/")
+                print(f"   ✅ {product['id']} - {product['name']}")
+
+                product_id += 1
+                category_count += 1
+                total_products += 1
+
+        print(f"   ➡️ Создано {category_count} товаров в категории")
+
+    print("\n" + "=" * 60)
+    print(f"✅ ВСЕГО СОЗДАНО: {total_products} ТОВАРОВ")
+    print(f"📂 Папка: {products_path}")
 
 if __name__ == "__main__":
     generate_all_products()

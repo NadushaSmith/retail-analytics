@@ -90,14 +90,17 @@ def generate_customer(customer_id):
 
 #функция генерации всех покупателей
 def generate_all_customers(num_customers=50):
+    save_path = r'C:\retail_analytics_pikcha\data\customers'
+    os.makedirs(save_path, exist_ok=True)
+
     for i in range(1, num_customers + 1):
         customer = generate_customer(i)
 
-        filename = f"data/customers/{customer['customer_id']}.json"
+        filename = f"{save_path}\\{customer['customer_id']}.json"
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(customer, f, ensure_ascii=False, indent=2)
 
-            print(f"Создан: {filename} - {customer['first_name']} {customer['last_name']}")
+            print(f"✅ Создан: {customer['customer_id']}.json - {customer['first_name']} {customer['last_name']}")
 
     print(f"\n✅ Сгенерировано {num_customers} покупателей в папке data/customers/")
 

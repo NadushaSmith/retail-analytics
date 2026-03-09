@@ -1,8 +1,88 @@
-# Data
-data/
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
 *.pyc
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# Airflow
+airflow/logs/
+airflow/logs/*
+!airflow/logs/.gitkeep
+airflow/airflow.cfg
+airflow/airflow.db
+airflow/standalone_admin_password.txt
+airflow/webserver_config.py
+airflow/scripts/
+airflow/spark/
+
+# Data files
+data/
+*.csv
+*.json
+!data/.gitkeep
+
+# Environment files
 .env
-.DS_Store
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# Docker
+volumes/
+*.pid
+docker/volumes/
+docker/airflow/
+docker/grafana/
+docker/scripts/
+
+# Temporary files
+*.tmp
+*.temp
 *.log
-temp/
+*.bak
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Spark
+spark/output/
+spark/output/*.csv
+!spark/output/.gitkeep
+spark/jars/
+spark/metastore_db/
+spark/derby.log
+
+# MongoDB
+dump/
+mongodump/
+
+# Test files
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.egg
+MANIFEST
+!**/.gitkeep
