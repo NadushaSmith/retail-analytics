@@ -1,5 +1,5 @@
 # docker/docker-compose.yml
-version: '3.8'
+#version: '3.8'
 
 services:
   # MongoDB
@@ -196,7 +196,9 @@ services:
       retries: 5
 
   airflow-init:
-    image: apache/airflow:2.7.1-python3.9
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
     container_name: pikcha-airflow-init
     depends_on:
       postgres:
@@ -225,7 +227,9 @@ services:
 
   # Airflow Webserver
   airflow-webserver:
-    image: apache/airflow:2.7.1-python3.9
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
     container_name: pikcha-airflow-webserver
     restart: always
     depends_on:
@@ -242,7 +246,7 @@ services:
       - ../airflow/logs:/opt/airflow/logs
       - ../airflow/plugins:/opt/airflow/plugins
       - ../airflow/spark:/opt/airflow/spark
-      - ../spark/output:/opt/airflow/spark/output   # ← ЭТУ СТРОКУ ДОБАВИТЬ
+      - ../spark/output:/opt/airflow/spark/output
       - ../scripts:/opt/airflow/scripts
       - ../.env:/opt/airflow/.env
       - airflow_deps_data:/home/airflow/.local
@@ -257,7 +261,9 @@ services:
 
   # Airflow Scheduler
   airflow-scheduler:
-    image: apache/airflow:2.7.1-python3.9
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
     container_name: pikcha-airflow-scheduler
     restart: always
     depends_on:
@@ -272,7 +278,7 @@ services:
       - ../airflow/logs:/opt/airflow/logs
       - ../airflow/plugins:/opt/airflow/plugins
       - ../airflow/spark:/opt/airflow/spark
-      - ../spark/output:/opt/airflow/spark/output   # ← ЭТУ СТРОКУ ДОБАВИТЬ
+      - ../spark/output:/opt/airflow/spark/output
       - ../scripts:/opt/airflow/scripts
       - ../.env:/opt/airflow/.env
       - airflow_deps_data:/home/airflow/.local

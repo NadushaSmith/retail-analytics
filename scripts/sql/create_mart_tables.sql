@@ -1,5 +1,5 @@
 -- =====================================================
--- 1. Создаем базу данных для MART слоя
+-- 1.База данных для MART слоя
 -- =====================================================
 CREATE DATABASE IF NOT EXISTS pikcha_mart;
 
@@ -26,12 +26,12 @@ CREATE TABLE IF NOT EXISTS pikcha_mart.stores_clean (
 ) ENGINE = ReplacingMergeTree(_cleaned_at)
 ORDER BY store_id;
 
--- Таблица очищенных товаров (ДОБАВЛЕНА КОЛОНКА description)
+-- Таблица очищенных товаров
 CREATE TABLE IF NOT EXISTS pikcha_mart.products_clean (
     product_id String,
     name String,
     category String,
-    description String,  -- ✅ ДОБАВЛЕНО!
+    description String,
     price Float64,
     unit String,
     calories Float64,
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS pikcha_mart.customers_clean (
 ) ENGINE = ReplacingMergeTree(_cleaned_at)
 ORDER BY customer_id;
 
--- Таблица очищенных покупок (заголовки)
+-- Таблица очищенных покупок
 CREATE TABLE IF NOT EXISTS pikcha_mart.purchases_clean (
     purchase_id String,
     customer_id String,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS pikcha_mart.purchases_clean (
 ) ENGINE = ReplacingMergeTree(_cleaned_at)
 ORDER BY (purchase_date, purchase_id);
 
--- Таблица деталей покупок (позиции)
+-- Таблица деталей покупок
 CREATE TABLE IF NOT EXISTS pikcha_mart.purchase_items_clean (
     purchase_id String,
     product_id String,

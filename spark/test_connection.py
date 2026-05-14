@@ -1,7 +1,7 @@
 from pyspark.sql import SparkSession
 import os
 
-# Текущая директория (должна быть C:\retail_analytics_pikcha\spark)
+# Текущая директория (С:\retail_analytics_pikcha\spark)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 jar_path = os.path.join(current_dir, "jars", "clickhouse-jdbc-0.4.6.jar")
 
@@ -10,7 +10,7 @@ print(f"📁 Путь к драйверу: {jar_path}")
 print(f"📁 Файл существует: {os.path.exists(jar_path)}")
 
 if not os.path.exists(jar_path):
-    print("❌ Драйвер не найден!")
+    print(" Драйвер не найден!")
     # Попробуем найти драйвер в других местах
     alt_path = os.path.join(os.path.dirname(current_dir), "spark", "jars", "clickhouse-jdbc-0.4.6.jar")
     print(f"📁 Альтернативный путь: {alt_path}")
@@ -39,6 +39,6 @@ try:
     df.show()
 
 except Exception as e:
-    print(f"❌ Ошибка: {e}")
+    print(f" Ошибка: {e}")
 
 spark.stop()

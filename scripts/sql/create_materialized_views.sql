@@ -1,7 +1,5 @@
 -- =====================================================
 -- Materialized Views для автоматической очистки данных
--- =====================================================
-
 -- MV для очистки магазинов
 CREATE MATERIALIZED VIEW IF NOT EXISTS pikcha_raw.stores_clean_mv
 TO pikcha_mart.stores_clean
@@ -106,7 +104,7 @@ FROM pikcha_raw.purchases_raw
 WHERE length(JSONExtractString(data, 'purchase_id')) > 0
   AND length(JSONExtractString(data, 'customer', 'customer_id')) > 0;
 
--- MV для деталей покупок (разворачиваем items)
+-- MV для деталей покупок (items)
 CREATE MATERIALIZED VIEW IF NOT EXISTS pikcha_raw.purchase_items_clean_mv
 TO pikcha_mart.purchase_items_clean
 AS

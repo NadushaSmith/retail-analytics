@@ -10,8 +10,8 @@ from clickhouse_driver import Client, errors as clickhouse_errors
 from utils.config import Config
 
 # чтобы логи были сразу видны
-sys.stdout.reconfigure(line_buffering=True)
-sys.stderr.reconfigure(line_buffering=True)
+# sys.stdout.reconfigure(line_buffering=True)
+# sys.stderr.reconfigure(line_buffering=True)
 
 
 class ClickHouseConsumer:

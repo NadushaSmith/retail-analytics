@@ -1,6 +1,5 @@
--- =====================================================
 -- 1. Таблица для мониторинга качества данных
--- =====================================================
+
 CREATE TABLE IF NOT EXISTS pikcha_mart.data_quality_metrics (
     check_date Date DEFAULT today(),
     table_name String,
@@ -16,9 +15,9 @@ CREATE TABLE IF NOT EXISTS pikcha_mart.data_quality_metrics (
 ) ENGINE = SummingMergeTree()
 ORDER BY (check_date, table_name);
 
--- =====================================================
+
 -- 2. MV для мониторинга дубликатов в покупках
--- =====================================================
+
 CREATE MATERIALIZED VIEW IF NOT EXISTS pikcha_raw.duplicate_monitor_mv
 TO pikcha_mart.data_quality_metrics
 AS
@@ -45,9 +44,9 @@ SELECT
     now() AS checked_at
 FROM pikcha_raw.purchases_raw;
 
--- =====================================================
--- 3. Представление для алертов (удобно для Grafana)
--- =====================================================
+
+-- 3. Представление для алертов
+
 CREATE VIEW IF NOT EXISTS pikcha_mart.quality_alerts AS
 SELECT
     check_date,

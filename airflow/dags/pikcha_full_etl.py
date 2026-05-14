@@ -6,7 +6,9 @@
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from datetime import datetime, timedelta
+from clickhouse_driver import Client
 import socket
 
 default_args = {
@@ -68,6 +70,60 @@ def check_services():
     print("=" * 60)
     return "services_ok"
 
+def run_producer():
+    import sys
+    sys.path.append(SCRIPTS_PATH)
+    from producer import MongoKafkaProducer
+    producer = MongoKafkaProducer()
+    producer.run()
+
+def run_consumer():
+    import sys
+    sys.path.append(SCRIPTS_PATH)
+    from consumer import ClickHouseConsumer
+
+    consumer = ClickHouseConsumer()
+    consumer.run()
+
+def check_data():
+    """Проверка количества данных в ClickHouse"""
+    client = Client(
+        host='clickhouse',
+        port=9000,
+        user='default',
+        password='strong_password_123'
+    )
+    result = client.execute("""
+        SELECT
+            (SELECT count() FROM pikcha_raw.stores_raw) as stores,
+            (SELECT count() FROM pikcha_raw.purchases_raw) as purchases,
+            (SELECT count() FROM pikcha_mart.customers_clean) as customers
+    """)
+    print(f"✅ Data counts - Stores: {result[0][0]}, Purchases: {result[0][1]}, Customers: {result[0][2]}")
+    return result
+
+def check_quality():
+    """Проверка качества данных"""
+    client = Client(
+        host='clickhouse',
+        port=9000,
+        user='default',
+        password='strong_password_123'
+    )
+    result = client.execute("""
+        SELECT
+            check_date,
+            table_name,
+            duplicate_percentage,
+            quality_score,
+            alert_level
+        FROM pikcha_mart.quality_alerts
+        ORDER BY check_date DESC
+        LIMIT 10
+    """)
+    print(f"✅ Quality alerts: {result}")
+    return result
+
 
 check_services_task = PythonOperator(
     task_id='check_services',
@@ -76,66 +132,88 @@ check_services_task = PythonOperator(
     dag=dag,
 )
 
-producer_task = BashOperator(
+producer_task = PythonOperator(
     task_id='run_producer',
-    bash_command=f'cd {SCRIPTS_PATH} && python producer.py',
+    python_callable=run_producer,
     execution_timeout=timedelta(minutes=5),
     dag=dag,
 )
 
-consumer_task = BashOperator(
+consumer_task = PythonOperator(
     task_id='run_consumer',
-    bash_command=f'cd {SCRIPTS_PATH} && python -u consumer.py',
+    python_callable=run_consumer,
     execution_timeout=timedelta(minutes=10),
     dag=dag,
 )
 
-check_data_task = BashOperator(
+
+check_data_task = PythonOperator(
     task_id='check_data',
-    bash_command=f'''
-        echo "📊 ПРОВЕРКА ДАННЫХ В CLICKHOUSE"
-        echo "----------------------------------------"
-
-        # Используем curl для запроса к ClickHouse HTTP API
-        STORES=$(curl -s -u default:strong_password_123 "http://clickhouse:8123/?query=SELECT%20count()%20FROM%20pikcha_raw.stores_raw" 2>/dev/null | tr -d '\n')
-        PURCHASES=$(curl -s -u default:strong_password_123 "http://clickhouse:8123/?query=SELECT%20count()%20FROM%20pikcha_raw.purchases_raw" 2>/dev/null | tr -d '\n')
-        CUSTOMERS=$(curl -s -u default:strong_password_123 "http://clickhouse:8123/?query=SELECT%20count()%20FROM%20pikcha_mart.customers_clean" 2>/dev/null | tr -d '\n')
-
-        echo "🏪 Магазины в RAW: $STORES"
-        echo "🛒 Покупки в RAW: $PURCHASES"
-        echo "👥 Покупатели в MART: $CUSTOMERS"
-
-        if [ -z "$STORES" ] || [ "$STORES" -eq 0 ] 2>/dev/null; then
-            echo "❌ ОШИБКА: Магазины не загружены!"
-            exit 1
-        fi
-
-        echo "✅ Данные загружены успешно"
-    ''',
+    python_callable=check_data,
     execution_timeout=timedelta(minutes=2),
     dag=dag,
 )
 
-spark_task = BashOperator(
+# check_data_task = ClickHouseOperator(
+#     task_id='check_data',
+#     clickhouse_conn_id='clickhouse_default',
+#     sql="""
+#         select
+#             (select count() from pikcha_raw.stores_raw) as stores,
+#             (select count() from pikcha_raw.purchases_raw) as purchases,
+#             (select count() from pikcha_mart.customers_clean) as customers
+#     """,
+#     do_xcom_push=True,
+#     execution_timeout=timedelta(minutes=2),
+#     dag=dag,
+
+
+
+spark_task = SparkSubmitOperator(
     task_id='spark_etl',
-    bash_command=f'cd {SPARK_PATH} && python customer_features.py',
+    application=f'{SPARK_PATH}/customer_features.py',
+    conn_id='spark_default',
+    name='pikcha_customer_features',
+    executor_memory='2g',
+    driver_memory='2g',
+    num_executors=1,
+    conf={
+        'spark.master': 'local[*]',
+        'spark.sql.adaptive.enabled': 'true',
+        'spark.jars': '/opt/airflow/spark/jars/clickhouse-jdbc-0.4.6.jar'
+    },
     execution_timeout=timedelta(minutes=15),
     dag=dag,
 )
 
-check_quality_task = BashOperator(
+check_quality_task = PythonOperator(
     task_id='check_quality',
-    bash_command=f'''
-        echo "📊 МЕТРИКИ КАЧЕСТВА"
-        echo "----------------------------------------"
-        clickhouse-client --host clickhouse --user default --password strong_password_123 --query "
-        SELECT * FROM pikcha_mart.quality_alerts;
-        " 2>/dev/null || echo "✅ Активных алертов нет"
-    ''',
+    python_callable=check_quality,
     execution_timeout=timedelta(minutes=2),
     dag=dag,
+
+# check_quality_task = ClickHouseOperator(
+#     task_id='check_quality',
+#     clickhouse_conn_id='clickhouse_default',
+#     sql="""
+#         select
+#             check_date,
+#             table_name,
+#             duplicate_percentage,
+#             quality_score,
+#             alert_level
+#         from pikcha_mart.quality_alerts
+#         order by check_date desc
+#         limit 10
+#     """,
+#     do_xcom_push=True,
+#     execution_timeout=timedelta(minutes=2),
+#     dag=dag,
 )
 
+
+
+print('chengess')
 check_minio_task = BashOperator(
     task_id='check_minio_upload',
     bash_command=f'''
@@ -150,7 +228,7 @@ check_minio_task = BashOperator(
     execution_timeout=timedelta(minutes=2),
     dag=dag,
 )
-# ==================== ПОРЯДОК ВЫПОЛНЕНИЯ ====================
+# ==================== Порядок выполнения ====================
 check_services_task >> \
 producer_task >> \
 consumer_task >> \
